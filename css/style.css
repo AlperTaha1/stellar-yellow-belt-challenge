@@ -1,0 +1,140 @@
+/* Modern Reset & Base */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #0b0f19; /* Daha derin, mat bir uzay siyahı */
+    color: #f3f4f6;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* Glassmorphism / Modern Card Kapsayıcı */
+.wallet-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #111827;
+    border: 1px solid #1f2937;
+    padding: 48px 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 380px;
+}
+
+/* Minimalist Başlık */
+h1 {
+    color: #ffffff;
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    letter-name: -0.025em;
+}
+
+/* Cüzdan Adres Rozeti */
+.wallet-address {
+    background-color: #1f2937;
+    color: #9ca3af;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #374151;
+    font-family: monospace;
+}
+
+/* Modern Buton Tasarımları */
+.btn {
+    background-color: #1f2937;
+    color: #e5e7eb;
+    border: 1px solid #374151;
+    padding: 12px 20px;
+    margin: 6px 0;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    width: 100%;
+}
+
+.btn:hover {
+    background-color: #374151;
+    border-color: #4b5563;
+}
+
+/* Aksiyon / Vurgu Butonları */
+.btn-primary {
+    background-color: #2563eb; /* Kurumsal Web3 Mavisi */
+    border-color: #2563eb;
+    color: #ffffff;
+}
+.btn-primary:hover {
+    background-color: #1d4ed8;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border-color: #374151;
+}
+
+.btn-action {
+    background-color: #059669; /* Stellar Yeşil Tonu */
+    border-color: #059669;
+    color: #ffffff;
+}
+.btn-action:hover {
+    background-color: #047857;
+}
+
+/* Bakiye Alanı */
+.balance-text {
+    margin: 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #38bdf8; /* Soft Buz Mavisi */
+    min-height: 24px;
+}
+
+/* Girdi (Input) Kutuları */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 10px;
+}
+
+input {
+    background-color: #0b0f19;
+    color: #ffffff;
+    border: 1px solid #374151;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.btn-disabled {
+    background-color: #374151; /* Gri */
+    cursor: not-allowed;
+    color: #9ca3af;
+}
+.btn-enabled {
+    background-color: #059669; /* Yeşil */
+    color: #ffffff;
+    cursor: pointer;
+}
