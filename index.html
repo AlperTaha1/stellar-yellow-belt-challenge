@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/1.5.1/index.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@creit.tech/stellar-wallets-kit@1.1.2/build/index.min.js"></script>
+    <!-- Stellar SDK -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.1/stellar-sdk.min.js"></script>
-    <title>Stellar Wallet</title>
+
+    <title>Stellar Auction Wallet</title>
 </head>
 <body>
 
 <div class="wallet-container">
-    <h1>Stellar Wallet</h1>
+    <h1>Stellar Auction</h1>
 
     <div id="walletAddressDisplay" class="wallet-address" style="display:none;"></div>
 
@@ -19,6 +22,7 @@
     <button id="disconnectButton" class="btn btn-secondary" style="display:none;">Disconnect</button>
     <button id="showBalanceButton" class="btn btn-secondary">Show Balance</button>
     <button id="fundWalletButton" class="btn btn-secondary" style="display:none; border-color: #8b5cf6; color: #8b5cf6;">Get Test XLM (Faucet)</button>
+
     <div id="balanceDisplay" class="balance-text"></div>
 
     <div id="paymentSection" style="display: none; width: 100%;">
@@ -30,9 +34,8 @@
     </div>
 
     <button id="sendPaymentButton" class="btn btn-action">Send Payment</button>
-
 </div>
 
-    <script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
