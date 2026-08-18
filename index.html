@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="css/style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@creit.tech/stellar-wallets-kit@1.1.2/build/index.min.js"></script>
-    <!-- Stellar SDK -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.1/stellar-sdk.min.js"></script>
 
     <title>Stellar Auction Wallet</title>
@@ -25,7 +24,9 @@
 
     <div id="balanceDisplay" class="balance-text"></div>
 
-    <div id="paymentSection" style="display: none; width: 100%;">
+    <button id="sendPaymentButton" class="btn btn-action" style="margin-bottom: 10px;">Send Payment</button>
+
+    <div id="paymentSection" style="display: none; width: 100%; margin-bottom: 20px;">
         <div class="input-group">
             <input type="text" id="destinationAddress" placeholder="Destination Address (G...)">
             <input type="number" id="sendAmount" placeholder="Amount (e.g., 10)">
@@ -33,7 +34,18 @@
         <button id="confirmPaymentButton" class="btn btn-disabled" disabled>Confirm Transaction</button>
     </div>
 
-    <button id="sendPaymentButton" class="btn btn-action">Send Payment</button>
+    <div id="auctionSection" class="auction-card" style="margin-top: 10px; width: 100%; text-align: left; background: #1a1d26; padding: 15px; border-radius: 8px; border: 1px solid #2d3748;">
+        <h3 style="color: #fff; margin-bottom: 8px;">🎨 Item: Cyberpunk Stellar Art #01</h3>
+        <p style="color: #a0aec0; font-size: 14px; margin-bottom: 12px;">Current Highest Bid: <span id="highestBid" style="color: #10b981; font-weight: bold;">50 XLM</span></p>
+        <p style="color: #a0aec0; font-size: 12px; margin-bottom: 15px;">Highest Bidder: <span id="highestBidder" style="color: #cbd5e0;">None yet</span></p>
+
+        <button id="toggleAuctionButton" class="btn btn-action" style="width: 100%;">Enter Auction</button>
+
+        <div id="auctionInteractiveSection" style="display: none; margin-top: 15px; flex-direction: column; gap: 10px;">
+            <input type="number" id="bidAmountInput" placeholder="Enter bid (XLM)" style="padding: 10px; border-radius: 4px; border: 1px solid #4a5568; background: #12141d; color: #fff;">
+            <button id="placeBidButton" class="btn btn-disabled" disabled style="width: 100%;">Place Bid</button>
+        </div>
+    </div>
 </div>
 
 <script type="module" src="app.js"></script>
