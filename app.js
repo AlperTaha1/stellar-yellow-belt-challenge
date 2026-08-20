@@ -1,10 +1,16 @@
-import { StellarWalletsKit, WalletNetwork, allowAllModules }
-  from "https://esm.sh/@creit.tech/stellar-wallets-kit@1.9.5?bundle";
+// İŞTE SİHİRLİ MERMİ: HTML'i ezip geçerek en güncel Stellar SDK'yı (v12.1) doğrudan JS içine çekiyoruz!
+import { StellarWalletsKit, WalletNetwork, allowAllModules } from "https://esm.sh/@creit.tech/stellar-wallets-kit@1.9.5?bundle";
+import StellarSdk from "https://esm.sh/@stellar/stellar-sdk@12.1.0?bundle";
 
+console.log('StellarSdk:', StellarSdk);
+console.log('Horizon:', StellarSdk.Horizon, '| rpc:', StellarSdk.rpc);
+
+window.__debugStellarSdk = StellarSdk; // konsoldan da erişebilmek için
 const kit = new StellarWalletsKit({
     network: WalletNetwork.TESTNET,
     modules: allowAllModules(),
 });
+
 const connectButton = document.getElementById('connectButton');
 const showBalanceButton = document.getElementById('showBalanceButton');
 const balanceDisplay = document.getElementById('balanceDisplay');
@@ -49,14 +55,12 @@ async function connectWallet() {
                     kit.setWallet(option.id);
                     const walletResponse = await kit.getAddress();
 
-                    // KRİTİK ÇÖZÜM: Gelen veri obje ise içindeki 'address'i al, metinse direkt kullan
                     userPublicKey = typeof walletResponse === 'string' ? walletResponse : walletResponse.address;
 
                     connectButton.textContent = "Wallet Connected";
                     connectButton.style.backgroundColor = "#10b981";
                     connectButton.style.color = "#12141d";
 
-                    // Artık elimizde saf string olduğu için substring sorunsuz çalışacak
                     addressDisplay.textContent = `${userPublicKey.substring(0, 4)}...${userPublicKey.substring(userPublicKey.length - 4)}`;
                     addressDisplay.style.display = "block";
                     disconnectButton.style.display = "inline-block";
@@ -97,7 +101,7 @@ async function showBalance() {
     if (!userPublicKey) return alert("Please connect your wallet first!");
     try {
         balanceDisplay.textContent = "Fetching balance...";
-        const server = new window.StellarSdk.Server('https://horizon-testnet.stellar.org');
+        const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
         const account = await server.loadAccount(userPublicKey);
         const xlmBalance = account.balances.find(b => b.asset_type === 'native');
         balanceDisplay.textContent = xlmBalance ? `${xlmBalance.balance} XLM` : "0 XLM";
@@ -131,25 +135,25 @@ async function sendPayment() {
         confirmButton.textContent = "Processing...";
         confirmButton.disabled = true;
 
-        const server = new window.StellarSdk.Server('https://horizon-testnet.stellar.org');
+        const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
         const account = await server.loadAccount(userPublicKey);
 
-        const transaction = new window.StellarSdk.TransactionBuilder(account, {
-            fee: window.StellarSdk.BASE_FEE,
-            networkPassphrase: window.StellarSdk.Networks.TESTNET
+        const transaction = new StellarSdk.TransactionBuilder(account, {
+            fee: StellarSdk.BASE_FEE,
+            networkPassphrase: StellarSdk.Networks.TESTNET
         })
-        .addOperation(window.StellarSdk.Operation.payment({
-            destination: destination,
-            asset: window.StellarSdk.Asset.native(),
-            amount: amount
-        }))
-        .setTimeout(30)
-        .build();
+            .addOperation(StellarSdk.Operation.payment({
+                destination: destination,
+                asset: StellarSdk.Asset.native(),
+                amount: amount
+            }))
+            .setTimeout(30)
+            .build();
 
         const signResponse = await kit.signTransaction(transaction.toXDR(), { network: 'TESTNET' });
         const signedXdr = typeof signResponse === 'string' ? signResponse : signResponse.signedXDR;
 
-        const transactionToSubmit = window.StellarSdk.TransactionBuilder.fromXDR(signedXdr, window.StellarSdk.Networks.TESTNET);
+        const transactionToSubmit = StellarSdk.TransactionBuilder.fromXDR(signedXdr, StellarSdk.Networks.TESTNET);
         const response = await server.submitTransaction(transactionToSubmit);
 
         alert("Payment sent successfully!\nHash: " + response.hash);
@@ -183,40 +187,35 @@ async function placeBid() {
         placeBidButton.textContent = "Submitting to Contract...";
         placeBidButton.disabled = true;
 
-        // 1. Soroban RPC Sunucusuna Bağlan (Akıllı Sözleşmeler için)
-        const server = new window.StellarSdk.SorobanRpc.Server('https://soroban-testnet.stellar.org:443');
-        const account = await server.getAccount(userPublicKey);
+        const horizonServer = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
+        const account = await horizonServer.loadAccount(userPublicKey);
 
-        // 2. Sözleşmeyi ve içindeki 'place_bid' fonksiyonunu çağır
-        const contract = new window.StellarSdk.Contract(CONTRACT_ID);
+        const contract = new StellarSdk.Contract(CONTRACT_ID);
         const operation = contract.call(
             "place_bid",
-            new window.StellarSdk.Address(userPublicKey).toScVal(),
-            window.StellarSdk.nativeToScVal(bidVal, { type: "u32" })
+            new StellarSdk.Address(userPublicKey).toScVal(),
+            StellarSdk.nativeToScVal(bidVal, { type: "u32" })
         );
 
-        let transaction = new window.StellarSdk.TransactionBuilder(account, {
+        let transaction = new StellarSdk.TransactionBuilder(account, {
             fee: "10000",
-            networkPassphrase: window.StellarSdk.Networks.TESTNET
+            networkPassphrase: StellarSdk.Networks.TESTNET
         })
             .addOperation(operation)
             .setTimeout(30)
             .build();
 
-        // 3. Soroban için işlemi hazırla (Gaz ücretleri ve kaynak hesaplaması)
-        transaction = await server.prepareTransaction(transaction);
+        const rpcServer = new StellarSdk.rpc.Server('https://soroban-testnet.stellar.org:443');
+        transaction = await rpcServer.prepareTransaction(transaction);
 
-        // 4. Cüzdan ile imzala
         const signResponse = await kit.signTransaction(transaction.toXDR(), { network: 'TESTNET' });
         const signedXdr = typeof signResponse === 'string' ? signResponse : signResponse.signedXDR;
-        const transactionToSubmit = window.StellarSdk.TransactionBuilder.fromXDR(signedXdr, window.StellarSdk.Networks.TESTNET);
+        const transactionToSubmit = StellarSdk.TransactionBuilder.fromXDR(signedXdr, StellarSdk.Networks.TESTNET);
 
-        // 5. Ağa gönder
-        const response = await server.sendTransaction(transactionToSubmit);
+        const response = await rpcServer.sendTransaction(transactionToSubmit);
 
-        alert("Awesome! Bid placed on Smart Contract!\nStatus: " + response.status);
+        alert("Awesome! Bid placed on Smart Contract!\nStatus: " + response.status + "\nHash: " + response.hash);
 
-        // Arayüzü güncelle
         currentHighestBid = bidVal;
         highestBidDisplay.textContent = `${currentHighestBid} XLM`;
         highestBidderDisplay.textContent = `${userPublicKey.substring(0, 6)}...${userPublicKey.substring(userPublicKey.length - 4)}`;
@@ -226,14 +225,12 @@ async function placeBid() {
 
     } catch (error) {
         console.error("Contract call error:", error);
-        alert("Contract Transaction Failed!");
+        alert("Contract Transaction Failed! Check console for details.");
     } finally {
         placeBidButton.disabled = true;
         placeBidButton.textContent = "Place Bid";
     }
 }
-
-
 
 [destinationInput, amountInput].forEach(el => {
     el.addEventListener('input', () => {
@@ -242,35 +239,33 @@ async function placeBid() {
     });
 });
 
-   toggleAuctionButton.addEventListener('click', () => {
-       if (auctionInteractiveSection.style.display === "none") {
-           auctionInteractiveSection.style.display = "flex";
-           toggleAuctionButton.textContent = "Close Auction";
-           toggleAuctionButton.classList.remove('btn-action');
-           toggleAuctionButton.classList.add('btn-secondary');
+toggleAuctionButton.addEventListener('click', () => {
+    if (auctionInteractiveSection.style.display === "none") {
+        auctionInteractiveSection.style.display = "flex";
+        toggleAuctionButton.textContent = "Close Auction";
+        toggleAuctionButton.classList.remove('btn-action');
+        toggleAuctionButton.classList.add('btn-secondary');
+        paymentSection.style.display = "none";
+    } else {
+        auctionInteractiveSection.style.display = "none";
+        toggleAuctionButton.textContent = "Enter Auction";
+        toggleAuctionButton.classList.remove('btn-secondary');
+        toggleAuctionButton.classList.add('btn-action');
+    }
+});
 
-           paymentSection.style.display = "none";
-       } else {
-           auctionInteractiveSection.style.display = "none";
-           toggleAuctionButton.textContent = "Enter Auction";
-           toggleAuctionButton.classList.remove('btn-secondary');
-           toggleAuctionButton.classList.add('btn-action');
-       }
-   });
-
-   sendPaymentButton.addEventListener('click', () => {
-       if (paymentSection.style.display === "none") {
-           paymentSection.style.display = "flex";
-           paymentSection.style.flexDirection = "column";
-
-           auctionInteractiveSection.style.display = "none";
-           toggleAuctionButton.textContent = "Enter Auction";
-           toggleAuctionButton.classList.remove('btn-secondary');
-           toggleAuctionButton.classList.add('btn-action');
-       } else {
-           paymentSection.style.display = "none";
-       }
-   });
+sendPaymentButton.addEventListener('click', () => {
+    if (paymentSection.style.display === "none") {
+        paymentSection.style.display = "flex";
+        paymentSection.style.flexDirection = "column";
+        auctionInteractiveSection.style.display = "none";
+        toggleAuctionButton.textContent = "Enter Auction";
+        toggleAuctionButton.classList.remove('btn-secondary');
+        toggleAuctionButton.classList.add('btn-action');
+    } else {
+        paymentSection.style.display = "none";
+    }
+});
 
 placeBidButton.addEventListener('click', placeBid);
 fundWalletButton.addEventListener('click', fundWallet);
