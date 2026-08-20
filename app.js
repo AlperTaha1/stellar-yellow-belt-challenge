@@ -47,14 +47,16 @@ async function connectWallet() {
             onWalletSelected: async (option) => {
                 try {
                     kit.setWallet(option.id);
-                    const publicKey = await kit.getAddress();
+                    const walletResponse = await kit.getAddress();
 
-                    userPublicKey = publicKey;
+                    // KRİTİK ÇÖZÜM: Gelen veri obje ise içindeki 'address'i al, metinse direkt kullan
+                    userPublicKey = typeof walletResponse === 'string' ? walletResponse : walletResponse.address;
 
                     connectButton.textContent = "Wallet Connected";
                     connectButton.style.backgroundColor = "#10b981";
                     connectButton.style.color = "#12141d";
 
+                    // Artık elimizde saf string olduğu için substring sorunsuz çalışacak
                     addressDisplay.textContent = `${userPublicKey.substring(0, 4)}...${userPublicKey.substring(userPublicKey.length - 4)}`;
                     addressDisplay.style.display = "block";
                     disconnectButton.style.display = "inline-block";
@@ -162,6 +164,9 @@ async function sendPayment() {
     }
 }
 
+// Kendi sözleşme adresimizi tanımlıyoruz
+const CONTRACT_ID = 'CBUIFCRLVKNGIVWIRJYZ3G75VJJIMIDITJUGIQA5IKPAMJJ7ABOJLCIZ';
+
 async function placeBid() {
     if (!userPublicKey) {
         alert("Please connect your wallet first!");
@@ -175,45 +180,55 @@ async function placeBid() {
     }
 
     try {
-        placeBidButton.textContent = "Submitting Bid...";
+        placeBidButton.textContent = "Submitting to Contract...";
         placeBidButton.disabled = true;
 
-        const server = new window.StellarSdk.Server('https://horizon-testnet.stellar.org');
-        const account = await server.loadAccount(userPublicKey);
+        // 1. Soroban RPC Sunucusuna Bağlan (Akıllı Sözleşmeler için)
+        const server = new window.StellarSdk.SorobanRpc.Server('https://soroban-testnet.stellar.org:443');
+        const account = await server.getAccount(userPublicKey);
 
-        const transaction = new window.StellarSdk.TransactionBuilder(account, {
-            fee: window.StellarSdk.BASE_FEE,
+        // 2. Sözleşmeyi ve içindeki 'place_bid' fonksiyonunu çağır
+        const contract = new window.StellarSdk.Contract(CONTRACT_ID);
+        const operation = contract.call(
+            "place_bid",
+            new window.StellarSdk.Address(userPublicKey).toScVal(),
+            window.StellarSdk.nativeToScVal(bidVal, { type: "u32" })
+        );
+
+        let transaction = new window.StellarSdk.TransactionBuilder(account, {
+            fee: "10000",
             networkPassphrase: window.StellarSdk.Networks.TESTNET
         })
-        .addOperation(window.StellarSdk.Operation.payment({
-            destination: userPublicKey,
-            asset: window.StellarSdk.Asset.native(),
-            amount: bidVal.toString()
-        }))
-        .setTimeout(30)
-        .build();
+            .addOperation(operation)
+            .setTimeout(30)
+            .build();
 
+        // 3. Soroban için işlemi hazırla (Gaz ücretleri ve kaynak hesaplaması)
+        transaction = await server.prepareTransaction(transaction);
+
+        // 4. Cüzdan ile imzala
         const signResponse = await kit.signTransaction(transaction.toXDR(), { network: 'TESTNET' });
         const signedXdr = typeof signResponse === 'string' ? signResponse : signResponse.signedXDR;
-
         const transactionToSubmit = window.StellarSdk.TransactionBuilder.fromXDR(signedXdr, window.StellarSdk.Networks.TESTNET);
-        const response = await server.submitTransaction(transactionToSubmit);
 
+        // 5. Ağa gönder
+        const response = await server.sendTransaction(transactionToSubmit);
+
+        alert("Awesome! Bid placed on Smart Contract!\nStatus: " + response.status);
+
+        // Arayüzü güncelle
         currentHighestBid = bidVal;
         highestBidDisplay.textContent = `${currentHighestBid} XLM`;
         highestBidderDisplay.textContent = `${userPublicKey.substring(0, 6)}...${userPublicKey.substring(userPublicKey.length - 4)}`;
 
-        alert("Bid placed successfully on-chain!\nHash: " + response.hash);
-
         bidAmountInput.value = '';
-        placeBidButton.disabled = true;
-        placeBidButton.textContent = "Place Bid";
         showBalance();
 
     } catch (error) {
-        console.error("Bid error:", error);
-        alert("Transaction Failed or Rejected!");
-        placeBidButton.disabled = false;
+        console.error("Contract call error:", error);
+        alert("Contract Transaction Failed!");
+    } finally {
+        placeBidButton.disabled = true;
         placeBidButton.textContent = "Place Bid";
     }
 }
