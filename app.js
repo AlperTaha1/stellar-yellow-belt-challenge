@@ -1,11 +1,10 @@
-// İŞTE SİHİRLİ MERMİ: HTML'i ezip geçerek en güncel Stellar SDK'yı (v12.1) doğrudan JS içine çekiyoruz!
 import { StellarWalletsKit, WalletNetwork, allowAllModules } from "https://esm.sh/@creit.tech/stellar-wallets-kit@1.9.5?bundle";
 import StellarSdk from "https://esm.sh/@stellar/stellar-sdk@12.1.0?bundle";
 
 console.log('StellarSdk:', StellarSdk);
 console.log('Horizon:', StellarSdk.Horizon, '| rpc:', StellarSdk.rpc);
 
-window.__debugStellarSdk = StellarSdk; // konsoldan da erişebilmek için
+window.__debugStellarSdk = StellarSdk;
 const kit = new StellarWalletsKit({
     network: WalletNetwork.TESTNET,
     modules: allowAllModules(),
@@ -168,7 +167,6 @@ async function sendPayment() {
     }
 }
 
-// Kendi sözleşme adresimizi tanımlıyoruz
 const CONTRACT_ID = 'CBUIFCRLVKNGIVWIRJYZ3G75VJJIMIDITJUGIQA5IKPAMJJ7ABOJLCIZ';
 
 async function placeBid() {
@@ -194,7 +192,7 @@ async function placeBid() {
         const operation = contract.call(
             "place_bid",
             new StellarSdk.Address(userPublicKey).toScVal(),
-            StellarSdk.nativeToScVal(bidVal, { type: "u32" })
+            StellarSdk.nativeToScVal(bidVal, { type: "i128" })
         );
 
         let transaction = new StellarSdk.TransactionBuilder(account, {
