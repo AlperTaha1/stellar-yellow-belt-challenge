@@ -1,10 +1,7 @@
+// İŞTE SİHİRLİ MERMİ: HTML'i ezip geçerek en güncel Stellar SDK'yı (v12.1) doğrudan JS içine çekiyoruz!
 import { StellarWalletsKit, WalletNetwork, allowAllModules } from "https://esm.sh/@creit.tech/stellar-wallets-kit@1.9.5?bundle";
 import StellarSdk from "https://esm.sh/@stellar/stellar-sdk@12.1.0?bundle";
 
-console.log('StellarSdk:', StellarSdk);
-console.log('Horizon:', StellarSdk.Horizon, '| rpc:', StellarSdk.rpc);
-
-window.__debugStellarSdk = StellarSdk;
 const kit = new StellarWalletsKit({
     network: WalletNetwork.TESTNET,
     modules: allowAllModules(),
@@ -150,7 +147,11 @@ async function sendPayment() {
             .build();
 
         const signResponse = await kit.signTransaction(transaction.toXDR(), { network: 'TESTNET' });
-        const signedXdr = typeof signResponse === 'string' ? signResponse : signResponse.signedXDR;
+        // NOT: stellar-wallets-kit "signedXDR" değil "signedTxXdr" döndürür.
+        const signedXdr = typeof signResponse === 'string' ? signResponse : signResponse.signedTxXdr;
+        if (!signedXdr) {
+            throw new Error('İmzalanmış XDR alınamadı. signResponse: ' + JSON.stringify(signResponse));
+        }
 
         const transactionToSubmit = StellarSdk.TransactionBuilder.fromXDR(signedXdr, StellarSdk.Networks.TESTNET);
         const response = await server.submitTransaction(transactionToSubmit);
@@ -160,6 +161,7 @@ async function sendPayment() {
         sendPaymentButton.style.display = "inline-block";
         showBalance();
     } catch (error) {
+        console.error("Payment error:", error);
         alert("Transaction Failed!");
     } finally {
         confirmButton.textContent = "Confirm Transaction";
@@ -167,7 +169,8 @@ async function sendPayment() {
     }
 }
 
-const CONTRACT_ID = 'CBUIFCRLVKNGIVWIRJYZ3G75VJJIMIDITJUGIQA5IKPAMJJ7ABOJLCIZ';
+// Kendi sözleşme adresimizi tanımlıyoruz
+const CONTRACT_ID = 'CDQGJSCW3LC54K77NZEJGSAUFW5NZRGNIX7M6D5LJWWT3556YD5DECHQ';
 
 async function placeBid() {
     if (!userPublicKey) {
@@ -192,7 +195,7 @@ async function placeBid() {
         const operation = contract.call(
             "place_bid",
             new StellarSdk.Address(userPublicKey).toScVal(),
-            StellarSdk.nativeToScVal(bidVal, { type: "i128" })
+            StellarSdk.nativeToScVal(bidVal, { type: "u32" })
         );
 
         let transaction = new StellarSdk.TransactionBuilder(account, {
@@ -204,10 +207,24 @@ async function placeBid() {
             .build();
 
         const rpcServer = new StellarSdk.rpc.Server('https://soroban-testnet.stellar.org:443');
+
+        // Önce simülasyon yapıp gerçek hatayı yakalayalım (varsa)
+        const simResult = await rpcServer.simulateTransaction(transaction);
+        if (StellarSdk.rpc.Api.isSimulationError(simResult)) {
+            console.error('SIMULATION FAILED:', simResult.error);
+            alert('Simülasyon hatası: ' + simResult.error);
+            return;
+        }
+
         transaction = await rpcServer.prepareTransaction(transaction);
 
         const signResponse = await kit.signTransaction(transaction.toXDR(), { network: 'TESTNET' });
-        const signedXdr = typeof signResponse === 'string' ? signResponse : signResponse.signedXDR;
+        // NOT: stellar-wallets-kit "signedXDR" değil "signedTxXdr" döndürür.
+        const signedXdr = typeof signResponse === 'string' ? signResponse : signResponse.signedTxXdr;
+        if (!signedXdr) {
+            throw new Error('İmzalanmış XDR alınamadı. signResponse: ' + JSON.stringify(signResponse));
+        }
+
         const transactionToSubmit = StellarSdk.TransactionBuilder.fromXDR(signedXdr, StellarSdk.Networks.TESTNET);
 
         const response = await rpcServer.sendTransaction(transactionToSubmit);
