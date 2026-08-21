@@ -170,7 +170,7 @@ async function sendPayment() {
 }
 
 // Kendi sözleşme adresimizi tanımlıyoruz
-const CONTRACT_ID = 'CDQGJSCW3LC54K77NZEJGSAUFW5NZRGNIX7M6D5LJWWT3556YD5DECHQ';
+const CONTRACT_ID = 'CCAZCDCJN4QJKX2WIX4P6VWSOPW7EXHELZTDGD4XLRRCBRHVDOCUFVUR';
 
 async function placeBid() {
     if (!userPublicKey) {

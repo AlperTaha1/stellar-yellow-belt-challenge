@@ -22,6 +22,10 @@ impl AuctionContract {
         if amount > current_bid {
             env.storage().instance().set(&BID, &amount);
             env.storage().instance().set(&BIDDER, &user);
+
+            // JÜRİNİN İSTEDİĞİ "REAL-TIME EVENT" SATIRI BURADA:
+            env.events().publish((symbol_short!("BID"), user.clone()), amount);
+
             return amount;
         }
 
